@@ -4,7 +4,7 @@ class Analyser {
         this.symbolTable = {};
         this.code = '';
         this.analyse(this.parseTree);
-        // this.parseTree.print();
+        this.parseTree.print();
         return this.parseTree;
     }
 
@@ -79,39 +79,38 @@ class Analyser {
             termtail = term.children[1];
         if (expressiontail.children.length == 0 && termtail.children.length == 0) {
             const value = this.factor(factor, type, isArray);
-            console.log('list', factor.children[0], value)
             node.setValue(value);
         } else {
-            const termResult = this.term(node.children[0], 'integer', false);
-            const value = this.expressionTail(node.children[1], termResult);
+            const term = this.term(node.children[0], 'integer', false);
+            const value = this.expressionTail(node.children[1], term);
             node.setValue(value);
         }
         return node.value;
     }
 
     term(node) {
-        const factorResult = this.factor(node.children[0], 'integer', false);
-        return this.termTail(node.children[1], factorResult);
+        const factor = this.factor(node.children[0], 'integer', false);
+        return this.termTail(node.children[1], factor);
     }
 
     termTail(node, leftFactor) {
         if (node.children.length == 0) {
-            return 1;
+            return leftFactor;
         }
         const isMultiplication = node.children[0].lexeme === '*';
-        const factor = this.factor(node.children[1], 'integer', false);
-        const rightFactor = this.termTail(node.children[2], factor);
-        return isMultiplication ? leftFactor*rightFactor : Math.floor(leftFactor/rightFactor);
+        const rightFactor = this.factor(node.children[1], 'integer', false);
+        const factor =  isMultiplication ? leftFactor*rightFactor : Math.floor(leftFactor/rightFactor);
+        return this.termTail(node.children[2], factor);
     }
     
     expressionTail(node, leftTerm) {
         if (node.children.length == 0) {
-            return 1;
+            return leftTerm;
         }
         const isAddition = node.children[0].lexeme === '+';
-        const term = this.factor(node.children[1], 'integer', false);
-        const rightTerm = this.termTail(node.children[2], term);
-        return isAddition ? leftTerm + rightTerm : leftTerm - rightTerm;
+        const rightTerm = this.term(node.children[1]);
+        const term = isAddition ? leftTerm + rightTerm : leftTerm - rightTerm;
+        return this.termTail(node.children[2], term);
     }
 
     factor(node, type, isArray) {
