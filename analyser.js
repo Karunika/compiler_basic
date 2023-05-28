@@ -3,7 +3,6 @@ class Analyser {
         this.parseTree = parseTree;
         this.symbolTable = {};
         this.code = '';
-        // this.generate();
         this.analyse(this.parseTree);
         // this.parseTree.print();
         return this.parseTree;
@@ -79,10 +78,11 @@ class Analyser {
             factor = term.children[0],
             termtail = term.children[1];
         if (expressiontail.children.length == 0 && termtail.children.length == 0) {
-            const value = this.factor(factor, type, isArray).value;
+            const value = this.factor(factor, type, isArray);
+            console.log('list', factor.children[0], value)
             node.setValue(value);
         } else {
-            const termResult = this.term(node.children[0], 'integer', false).value;
+            const termResult = this.term(node.children[0], 'integer', false);
             const value = this.expressionTail(node.children[1], termResult);
             node.setValue(value);
         }
@@ -90,7 +90,7 @@ class Analyser {
     }
 
     term(node) {
-        const factorResult = this.factor(node.children[0], 'integer', false).value;
+        const factorResult = this.factor(node.children[0], 'integer', false);
         return this.termTail(node.children[1], factorResult);
     }
 
@@ -101,7 +101,6 @@ class Analyser {
         const isMultiplication = node.children[0].lexeme === '*';
         const factor = this.factor(node.children[1], 'integer', false);
         const rightFactor = this.termTail(node.children[2], factor);
-        // console.log("term-tail", leftFactor, rightFactor)
         return isMultiplication ? leftFactor*rightFactor : Math.floor(leftFactor/rightFactor);
     }
     
@@ -124,19 +123,13 @@ class Analyser {
                 if (!isArray) {
                     throw new Error("array wrong type");
                 }
-                const list = this.list(node.children[1]);
-                if (type == list.type) {
-                    return list;
-                } else {
-                    throw new Error("array wrong type")
-                }
+                return this.list(node.children[1], type);
             }
         } else {
             if (first.type == 'idaccess') {
-                const value = this.idaccess(first, type, isArray);
-                return value;
+                return this.idaccess(first, type, isArray);
             } else if (first.type == 'literal') {
-                return this.literal(first);
+                return this.literal(first, type);
             }
         }
     }
@@ -144,7 +137,7 @@ class Analyser {
     idaccess(node, type, isArray) {
         const identifier = node.children[0].lexeme,
             symbol = this.symbolTable[identifier];
-        if (symbol.type != type) {
+        if (!symbol.isValidType(type)) {
             throw new Error("incompatible type");
         }
 
@@ -168,35 +161,24 @@ class Analyser {
         const symbol = this.symbolTable[identifier];
         if (!rangeop) {
             const index = this.expression(node.children[1], 'integer', false);
-            symbol.addIndex(index);
-            return { value: symbol.value[index] };
+            return symbol.getValueAtIndex(index);
         } else {
             const initial = this.expression(node.children[1], 'integer', false),
                 final = this.expression(node.children[3], 'integer', false);
-            symbol.addRange(initial, final);
-            return { value: symbol.value.slice(initial, final+1) };
+            return symbol.getValueAtRange(initial, final);
         }
     }
 
-    list(node, type = null) {
-        const literal = this.literal(node.children[0]);
-        if (type != null && type != literal.type) {
-            throw new Error("types of the elements of the list is inconsistent");
-        }
+    list(node, type) {
+        const literal = this.literal(node.children[0], type);
         if (node.children.length == 1) {
-            return {
-                value: [literal.value],
-                type
-            }
+            return [literal]
         }
-        const list = this.list(node.children[2], literal.type);
-        return {
-            value: [literal.value, ...list.value],
-            type: literal.type
-        };
+        const list = this.list(node.children[2], type);
+        return [literal, ...list];
     }
 
-    literal(node, type = null) {
+    literal(node, type) {
         const literal = node.children[0];
         let value;
         if (literal.tokenType == 'integer') {
@@ -213,10 +195,7 @@ class Analyser {
             throw new Errow("wrong type");
         }
 
-        return {
-            type: literal.tokenType,
-            value
-        }
+        return value;
     }
 
 }
@@ -232,7 +211,7 @@ class Variable {
         this.value = value;
     }
 
-    checkType(type) {
+    isValidType(type) {
         return this.type == type;
     }
 
@@ -242,29 +221,64 @@ class Variable {
 }
 
 class Array {
-    constructor(type, length, value = null) {
+    constructor(type, length) {
         this.type = type;
         this.length = length;
-        this.value = value;
-        this.rangeTable = {};
-        this.indexTable = {};
+        this.value = []
+        this.rangeTable = [];
+        this.indexTable = [];
     }
 
     setValue(value) {
-        this.value = value;
+        // if (value.length != this.length) {
+        //     throw new Error("array size don't match");
+        // }
+        this.value.push(value);
+        this.rangeTable.push({});
+        this.indexTable.push({});
     }
 
     isArray() {
         return true;
     }
 
-    addIndex(index) {
-        this.indexTable[index] = -~this.indexTable[index]
+    isValidType(type) {
+        return type == this.type;
     }
 
-    addRange(initial, final) {
+    getValueAtIndex(index) {
+        if (index >= this.length) {
+            throw new Error("range error, index out of bounds");
+        }
+        const current = this.indexTable[this.indexTable.length -1];
+        if (current[index]) {
+            current[index].counter++;
+            return current[index].value;
+        } else {
+            current[index] = {
+                counter: 1,
+                value: this.value[this.value.length -1][index]
+            }
+            return current[index].value;
+        }
+    }
+    
+    getValueAtRange(initial, final) {
+        if (initial > final || final >= this.length) {
+            throw new Error("range error, index out of bounds");
+        }
         const range = initial + ',' + final;
-        this.rangeTable[range] = -~this.rangeTable[range]
+        const current = this.rangeTable[this.rangeTable.length -1];
+        if (current[range]) {
+            current[range].counter++;
+            return current[index].value;
+        } else {
+            current[range] = {
+                counter: 1,
+                value: this.value[this.value.length -1].slice(initial, final+1)
+            }
+            return current[range].value;
+        }
     }
 }
 
