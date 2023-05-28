@@ -1,7 +1,7 @@
 module.exports = {
     // terminals
     INTEGER: 'integer',
-    CHAR: 'character',
+    CHARACTER: 'character',
     STRING: 'string',
     BOOLEAN: 'boolean',
     KEYWORD: 'keyword',
@@ -34,6 +34,11 @@ module.exports = {
     IDACCESS: 'idaccess',
     SUBSCRIPT: 'subscript',
     LIST: 'list',
+
+    // misc
+    EPSILON: 'epsilon'
+
+    // error codes
 }
 
 

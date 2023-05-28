@@ -3,19 +3,12 @@ const { ASTNode } = require('./ast_node');
 class Parser {
     constructor(tokenStreamController) {
         this.tokenStream = tokenStreamController;
-        this.stack = []
-        this.symbolTable = {};
         this.rootNode = new ASTNode("root");
         this.program();
-        this.print();
         return this.rootNode;
     }
 
     print(node = this.rootNode, indent = 0) {
-        if (node == null) {
-            console.log("   ".repeat(indent), "null");
-            return;
-        }
         if (node.type == "token") {
             console.log("   ".repeat(indent), node)
             return;
@@ -180,18 +173,13 @@ class Parser {
         this.opensqrb(currentNode);
         this.expression(currentNode);
 
-        const currentToken1 = this.tokenStream.current().tokenType;
-        if (currentToken1 == 'range') {
+        const currentToken = this.tokenStream.current().tokenType;
+        if (currentToken == 'rangeop') {
             this.rangeop(currentNode);
             this.expression(currentNode);
         }
 
         this.closesqrb(currentNode);
-
-        const currentToken2 = this.tokenStream.current().tokenType;
-        if (currentToken2 == 'opensqrb') {
-            this.subscript(currentNode);
-        }
 
         parentNode.push(currentNode);
     }
@@ -219,6 +207,10 @@ class Parser {
 
     mulop(node) {
         return this.checkTerminal(node, 'mulop');
+    }
+
+    rangeop(node) {
+        return this.checkTerminal(node, 'rangeop');
     }
 
     openparen(node) {
@@ -293,8 +285,13 @@ class Parser {
 
     checkTerminal(node, tokenType) {
         const valid = this.tokenStream.current().tokenType == tokenType;
-        if (valid)
-            node.push(this.tokenStream.peek())
+        if (valid) {
+            if (tokenType == 'whitespace') {
+                this.tokenStream.peek();
+            } else {
+                node.push(this.tokenStream.peek())
+            }
+        }
         else throw Error("error")
         return valid;
     }

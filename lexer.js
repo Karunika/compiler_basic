@@ -1,6 +1,6 @@
 const {
     INTEGER,
-    CHAR,
+    CHARACTER,
     STRING,
     BOOLEAN,
     KEYWORD,
@@ -94,7 +94,7 @@ class TokenStreamController {
 
 const tokenRegEx = {
     [INTEGER]: /^[0-9]+$/,
-    [CHAR]: /^\'.\'$/,
+    [CHARACTER]: /^\'.\'$/,
     [STRING]: /^\".*\"$/,
     [BOOLEAN]: /^(True|False)$/,
     [KEYWORD]: /^(int|char|string|boolean)$/,

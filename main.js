@@ -8,10 +8,8 @@ const handleFile = (err, data) => {
     if (err) throw err
     const tokenStreamController = lexer.scan(data)
     if (!tokenStreamController) return;
-    console.log(tokenStreamController.tokenStream);
     const parseTree = new Parser(tokenStreamController);
-    const yield = new Analyser(parseTree);
-    console.log(yield)
+    const newParseTree = new Analyser(parseTree);
 }
 
 fs.readFile(path.join(__dirname, 'test1.kt'), 'utf8', handleFile)
