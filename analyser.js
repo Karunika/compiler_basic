@@ -144,7 +144,7 @@ class Analyser {
             if (symbol.isArray() && node.children.length == 2) {
                 return this.subscript(node.children[1], identifier, isArray);
             } else {
-                return symbol.value;
+                return symbol.isArray() ? symbol.getValue() : symbol.value;
             }
         } else {
             throw new Error("identifier not declared");
@@ -229,12 +229,16 @@ class Array {
     }
 
     setValue(value) {
-        // if (value.length != this.length) {
-        //     throw new Error("array size don't match");
-        // }
+        if (value.length != this.length) {
+            throw new Error("array size don't match");
+        }
         this.value.push(value);
         this.rangeTable.push({});
         this.indexTable.push({});
+    }
+
+    getValue() {
+        return this.value[this.value.length -1];
     }
 
     isArray() {
