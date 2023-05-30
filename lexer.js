@@ -97,7 +97,7 @@ const tokenRegEx = {
     [CHARACTER]: /^\'.\'$/,
     [STRING]: /^\".*\"$/,
     [BOOLEAN]: /^(True|False)$/,
-    [KEYWORD]: /^(int|char|string|boolean)$/,
+    [KEYWORD]: /^(int|char|string|bool)$/,
     [IDENTIFIER]: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
     [MULOP]: /^[\*\/]$/,
     [ADDOP]: /^[\+\-]$/,

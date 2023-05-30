@@ -14,4 +14,4 @@ const handleFile = (err, data) => {
     const generatedCode = new Generator(newParseTree, symbolTable);
 }
 
-fs.readFile(path.join(__dirname, 'test1.kt'), 'utf8', handleFile)
+fs.readFile(path.join(__dirname, 'tests/test1.kt'), 'utf8', handleFile)

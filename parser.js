@@ -143,7 +143,7 @@ class Parser {
             this.integer(currentNode);
         } else if (currentToken == 'string') {
             this.string(currentNode);
-        } else if (currentToken == 'char') {
+        } else if (currentToken == 'character') {
             this.char(currentNode);
         } else if (currentToken == 'boolean') {
             this.boolean(currentNode);
@@ -264,7 +264,7 @@ class Parser {
     }
 
     char(node) {
-        return this.checkTerminal(node, "char");
+        return this.checkTerminal(node, "character");
     }
 
     boolean(node) {
@@ -292,7 +292,7 @@ class Parser {
                 node.push(this.tokenStream.peek())
             }
         }
-        else throw Error("error")
+        else throw Error(tokenType, "error")
         return valid;
     }
 }

@@ -10,3 +10,13 @@ k = l[3..8];
 f = l;
 int j;
 j = l[6]*4+5;
+
+string s;
+s = "this";
+
+char ch;
+ch = 'j';
+
+bool wh;
+wh = False;
+
