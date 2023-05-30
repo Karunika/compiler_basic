@@ -4,8 +4,10 @@ class Analyser {
         this.symbolTable = {};
         this.code = '';
         this.analyse(this.parseTree);
-        this.parseTree.print();
-        return this.parseTree;
+        // for (let sym in this.symbolTable) {
+        //     this.symbolTable[sym].print();
+        // }
+        return [this.parseTree, this.symbolTable];
     }
 
     analyse(node) {
@@ -183,9 +185,9 @@ class Analyser {
         if (literal.tokenType == 'integer') {
             value = parseInt(literal.lexeme);
         } else if (literal.tokenType == 'character') {
-            value = literal.lexeme.replace(/'/g, '');
+            value = literal.lexeme;
         } else if (literal.tokenType == 'string') {
-            value = literal.lexeme.replace(/"/g, '');
+            value = literal.lexeme;
         } else {
             value = literal.lexeme == 'True';
         }
@@ -217,7 +219,16 @@ class Variable {
     isArray() {
         return false;
     }
+
+    print() {
+        console.log('{');
+        console.log('\ttype:', this.type);
+        console.log('\tvalue:', this.value);
+        console.log('}');
+    }
 }
+
+const LENGTH = 5;
 
 class Array {
     constructor(type, length) {
@@ -226,6 +237,8 @@ class Array {
         this.value = []
         this.rangeTable = [];
         this.indexTable = [];
+        this.ids = [];
+        this.index = -1;
     }
 
     setValue(value) {
@@ -260,7 +273,8 @@ class Array {
         } else {
             current[index] = {
                 counter: 1,
-                value: this.value[this.value.length -1][index]
+                value: this.value[this.value.length -1][index],
+                id: makeid(LENGTH)
             }
             return current[index].value;
         }
@@ -270,19 +284,56 @@ class Array {
         if (initial > final || final >= this.length) {
             throw new Error("range error, index out of bounds");
         }
-        const range = initial + ',' + final;
+        const range = initial + '..' + final;
         const current = this.rangeTable[this.rangeTable.length -1];
         if (current[range]) {
             current[range].counter++;
-            return current[index].value;
+            return current[range].value;
         } else {
             current[range] = {
                 counter: 1,
-                value: this.value[this.value.length -1].slice(initial, final+1)
+                value: this.value[this.value.length -1].slice(initial, final+1),
+                id: makeid(LENGTH)
             }
             return current[range].value;
         }
     }
+
+    currentIndex() {
+        return this.index;
+    }
+
+    nextIndex() {
+        return this.index++;
+    }
+
+    print() {
+        console.log('{');
+        console.log('\ttype:', this.type);
+        console.log('\tvalue:', this.value);
+        console.log('\trange:');
+        // for (let val of this.value) {
+        //     console.log('\t\tval:', val);
+        // }
+        for (let range in this.rangeTable) {
+            console.log('\t\t', range + ':', '{');
+            console.log('\t\t\t', this.rangeTable[range])
+            console.log('\t\t}');
+        }
+        console.log('}');
+    }
+}
+
+function makeid(length) {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    return result;
 }
 
 module.exports = { Analyser }
