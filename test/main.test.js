@@ -217,6 +217,31 @@ i = 21;
 })
 
 describe('code optimization', () => {
+    it('computed range index', () => {
+        const code = `
+            int arr[9];
+            arr = {4, 5, 6, 7, 0, 1, 3, 9, 3};
+            
+            int x[arr[0]+1];
+            x = arr[1..5];
+            
+            int y[5];
+            y = arr[arr[2]-5..arr[2]-1];
+        `,
+        resultPattern = new RegExp(`int arr\\[9\\];
+arr = \\{4,5,6,7,0,1,3,9,3\\};
+int ([a-zA-Z]{5})\\[9\\];
+\\1 = arr\\[1\\.\\.5\\];
+int x\\[5\\];
+x = \\1;
+int y\\[5\\];
+y = \\1;
+`);
+
+        assert.match(generateCode(code), resultPattern)
+
+    })
+
     it('multiple range operation', () => {
         const code = `
             int arr[4];
@@ -272,6 +297,46 @@ int ([a-zA-Z]{5})\\[4\\];
 \\2 = arr\\[2\\.\\.3\\];
 newArr = \\2;
 anotherArray = \\2;
+`);
+        assert.match(generateCode(code), resultPattern);
+    })
+
+    it('more than one repeated range accesses', () => {
+        const code = `
+            int arr[4];
+            arr = {1, 2, 3, 4};
+            
+            int newArr[2];
+            newArr = arr[2..3];
+            newArr = arr[1..2];
+            
+            int anotherArray[2];
+            anotherArray = arr[2..3];
+            anotherArray = arr[1..2];
+            
+            arr = {9, 8, 7, 6};
+            
+            newArr = arr[2..3];
+            
+            anotherArray = arr[2..3];    
+        `,
+        resultPattern = new RegExp(`int arr\\[4\\];
+arr = \\{1,2,3,4\\};
+int ([a-zA-Z]{5})\\[4\\];
+\\1 = arr\\[2\\.\\.3\\];
+int ([a-zA-Z]{5})\\[4\\];
+\\2 = arr\\[1\\.\\.2\\];
+int newArr\\[2\\];
+newArr = \\1;
+newArr = \\2;
+int anotherArray\\[2\\];
+anotherArray = \\1;
+anotherArray = \\2;
+arr = \\{9,8,7,6\\};
+int ([a-zA-Z]{5})\\[4\\];
+\\3 = arr\\[2\\.\\.3\\];
+newArr = \\3;
+anotherArray = \\3;
 `);
         assert.match(generateCode(code), resultPattern);
     })

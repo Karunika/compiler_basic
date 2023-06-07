@@ -22,8 +22,6 @@ const getFileContent = (file) => {
     return fs.readFileSync(path.join(__dirname, file), 'utf8');
 }
 
-console.log(generateCode(getFileContent('tests/hello.kt')))
-
 module.exports = {
     getFileContent,
     generateCode
