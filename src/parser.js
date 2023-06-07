@@ -23,6 +23,10 @@ class Parser {
     }
 
     program(parentNode = this.rootNode) {
+        if (this.tokenStream.isExceeded()) {
+            return;
+        }
+
         const currentNode = new ASTNode("program");
         this.statement(currentNode);
         this.optionalWhitespace(currentNode);
@@ -83,7 +87,7 @@ class Parser {
 
     expressionTail(parentNode) {
         const currentNode = new ASTNode("expression-tail");
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
     
         if(currentToken == 'addop') {
             this.addop(currentNode);
@@ -103,7 +107,7 @@ class Parser {
 
     termTail(parentNode) {
         const currentNode = new ASTNode("term-tail");
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
 
         if(currentToken == 'mulop') {
             this.mulop(currentNode);
@@ -116,7 +120,7 @@ class Parser {
 
     factor(parentNode) {
         const currentNode = new ASTNode("factor");
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
 
         if (currentToken == 'openparen') {
             this.openparen(currentNode);
@@ -137,7 +141,7 @@ class Parser {
 
     literal(parentNode) {
         const currentNode = new ASTNode('literal');
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
 
         if (currentToken == 'integer') {
             this.integer(currentNode);
@@ -148,7 +152,7 @@ class Parser {
         } else if (currentToken == 'boolean') {
             this.boolean(currentNode);
         } else {
-            throw new Error("error");
+            throw Error('[position ' + currentToken.position + ': syntax error] found ' + currentToken.lexeme + '\nexpected literal');
         }
 
         parentNode.push(currentNode);
@@ -159,7 +163,7 @@ class Parser {
 
         this.identifier(currentNode);
 
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
         if (currentToken == 'opensqrb') {
             this.subscript(currentNode);
         }
@@ -173,7 +177,7 @@ class Parser {
         this.opensqrb(currentNode);
         this.expression(currentNode);
 
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
         if (currentToken == 'rangeop') {
             this.rangeop(currentNode);
             this.expression(currentNode);
@@ -191,7 +195,7 @@ class Parser {
         this.literal(currentNode);
         this.optionalWhitespace(currentNode);
 
-        const currentToken = this.tokenStream.current().tokenType;
+        const currentToken = this.tokenStream.current()?.tokenType;
         if (currentToken == 'comma') {
             this.comma(currentNode);
             this.optionalWhitespace(currentNode);
@@ -284,7 +288,11 @@ class Parser {
     }
 
     checkTerminal(node, tokenType) {
-        const valid = this.tokenStream.current().tokenType == tokenType;
+        if (this.tokenStream.isExceeded()) {
+            throw ('[syntax error] found nothing\n' + 'expected ' + tokenType)
+        }
+        const current = this.tokenStream.current();
+        const valid = current.tokenType == tokenType;
         if (valid) {
             if (tokenType == 'whitespace') {
                 this.tokenStream.peek();
@@ -292,7 +300,7 @@ class Parser {
                 node.push(this.tokenStream.peek())
             }
         }
-        else throw Error(tokenType, "error")
+        else throw Error('[position ' + current.position + ': syntax error] found ' + current.lexeme + '\nexpected ' + tokenType);
         return valid;
     }
 }

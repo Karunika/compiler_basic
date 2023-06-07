@@ -18,7 +18,7 @@ const {
     SEMICOLON,
     COMMA,
     WHITESPACE
-} = require('./constants');
+} = require('../constants');
 
 const scan = input => {
     const tokenStream = [];
@@ -28,7 +28,7 @@ const scan = input => {
 
         for (let forward = lexemeBegin; ; forward++) {
             lexemeQuestion += input[forward];
-            const token = analyse(lexemeQuestion);
+            const token = analyse(lexemeQuestion, lexemeBegin);
 
             if (token != null) {
                 lexeme = lexemeQuestion;
@@ -36,7 +36,7 @@ const scan = input => {
             }
 
             if (found && token == null) {
-                tokenStream.push(analyse(lexeme))
+                tokenStream.push(analyse(lexeme, lexemeBegin))
                 lexemeBegin = forward;
                 break;
             }
@@ -49,9 +49,7 @@ const scan = input => {
         }
 
         if (!found) {
-            console.log(lexemeQuestion.match(/^.*\n/g)[0])
-            console.log("unidentified token");
-            return null;
+            throw new Error("[position " + lexemeBegin + ': undefined token] ' + input.substr(lexemeBegin).match(/^.*\n?/g)[0]);
         }
 
     }
@@ -93,6 +91,7 @@ class TokenStreamController {
 }
 
 const tokenRegEx = {
+    [ADDOP]: /^[\+\-]$/,
     [INTEGER]: /^[0-9]+$/,
     [CHARACTER]: /^\'.\'$/,
     [STRING]: /^\".*\"$/,
@@ -100,7 +99,6 @@ const tokenRegEx = {
     [KEYWORD]: /^(int|char|string|bool)$/,
     [IDENTIFIER]: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
     [MULOP]: /^[\*\/]$/,
-    [ADDOP]: /^[\+\-]$/,
     [RANGEOP]: /^\.\.$/,
     [OPENSQRB]: /^\[$/,
     [CLOSESQRB]: /^\]$/,
@@ -114,13 +112,14 @@ const tokenRegEx = {
     [WHITESPACE]: /^[\n\s\t]*$/
 };
 
-const analyse = lexeme => {
+const analyse = (lexeme, position) => {
     for (let tokenType in tokenRegEx) {
         if (tokenRegEx[tokenType].test(lexeme)) {
             return {
                 type: "token",
                 tokenType,
-                lexeme
+                lexeme,
+                position
             }
         }
     }

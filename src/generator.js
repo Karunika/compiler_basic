@@ -4,13 +4,13 @@ class Generator {
         this.symbolTable = symbolTable;
         this.code = '';
         this.generate();
-        console.log(this.code);
-        return this.code;
     }
 
     generate() {
         this.code = '';
-        this.program(this.parseTree.children[0]);
+        if (this.parseTree.children.length > 0) {
+            this.program(this.parseTree.children[0]);
+        }
     }
 
     program(node) {
@@ -21,6 +21,7 @@ class Generator {
     }
 
     statement(node) {
+        if (node.children.length == 0) return;
         const statement = node.children[0];
         if (statement.type == 'declaration') {
             this.declaration(node.children[0]);
@@ -58,7 +59,7 @@ class Generator {
             for (let range in rangeTable) {
                 const { id, counter } = rangeTable[range];
                 if (counter > 1) {
-                    this.code += typeToKeyword[symbol.type] + ' ' + identifier + '[' + symbol.length + '];\n';
+                    this.code += typeToKeyword[symbol.type] + ' ' + id + '[' + symbol.length + '];\n';
                     this.code += id + ' = ' + identifier + '[' + range + '];\n';
                 }
             }
@@ -78,12 +79,21 @@ class Generator {
                 if (subscript.children.length == 5) {
                     const symbol = this.symbolTable[identifier],
                         initial = subscript.children[1].value,
-                        final = subscript.children[3].value;
-                        return symbol.rangeTable[symbol.currentIndex()][initial + '..' + final].id;
+                        final = subscript.children[3].value,
+                        rangeTable = symbol.rangeTable[symbol.currentIndex()][initial + '..' + final];
+                        if (rangeTable.counter == 1) {
+                            return identifier + '[' + initial + '..' + final + ']';
+                        }
+                        return rangeTable.id;
                 } else {
                     return node.value;
                 }
             } else {
+                if (factor.children[0].tokenType == 'opencurly') {
+                    return '{' + node.value + '}';
+                } else if (factor.children[0].tokenType == 'openparen') {
+                    return factor.children[1].value
+                }
                 return node.value;
             }
         } else {

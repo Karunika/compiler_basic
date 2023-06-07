@@ -7,6 +7,7 @@ class Analyser {
         // for (let sym in this.symbolTable) {
         //     this.symbolTable[sym].print();
         // }
+        // parseTree.print()
         return [this.parseTree, this.symbolTable];
     }
 
@@ -40,8 +41,7 @@ class Analyser {
         }
         const identifier = node.children[1].lexeme;
         if (this.symbolTable[identifier]) {
-            console.log('symbol', identifier);
-            throw new Error("already declared variable with same identifier before");
+            throw new Error("[position " + node.children[1].position + ": already declared variable with the same identifier before] " + identifier);
         }
         const type = keywordToType[node.children[0].lexeme];
         if (node.children[2].tokenType == 'opensqrb') {
@@ -59,7 +59,7 @@ class Analyser {
             const computed = this.expression(node.children[2], symbol.type, symbol.isArray());
             symbol.setValue(computed);
         } else {
-            throw new Error("identifier not declared");
+            throw new Error("[position " + node.children[0].position + ": identifier not declared] " + identifier);
         }
         return;
     }
@@ -83,8 +83,8 @@ class Analyser {
             const value = this.factor(factor, type, isArray);
             node.setValue(value);
         } else {
-            const term = this.term(node.children[0], 'integer', false);
-            const value = this.expressionTail(node.children[1], term);
+            const term = this.term(node.children[0], 'integer', false),
+                value = this.expressionTail(node.children[1], term);
             node.setValue(value);
         }
         return node.value;
@@ -109,20 +109,20 @@ class Analyser {
         if (node.children.length == 0) {
             return leftTerm;
         }
-        const isAddition = node.children[0].lexeme === '+';
-        const rightTerm = this.term(node.children[1]);
-        const term = isAddition ? leftTerm + rightTerm : leftTerm - rightTerm;
-        return this.termTail(node.children[2], term);
+        const isAddition = node.children[0].lexeme === '+',
+            rightTerm = this.term(node.children[1]),
+            term = isAddition ? leftTerm + rightTerm : leftTerm - rightTerm;
+        return this.expressionTail(node.children[2], term);
     }
 
     factor(node, type, isArray) {
         const first = node.children[0];
         if (first.type == 'token') {
             if (first.tokenType == 'openparen') {
-                this.expression(node.children[1], type, isArray);
+                return this.expression(node.children[1], type, isArray);
             } else if (first.tokenType == 'opencurly') {
                 if (!isArray) {
-                    throw new Error("array wrong type");
+                    throw new Error("[position " + first.position + ": array type not expected] {");
                 }
                 return this.list(node.children[1], type);
             }
@@ -139,7 +139,7 @@ class Analyser {
         const identifier = node.children[0].lexeme,
             symbol = this.symbolTable[identifier];
         if (!symbol.isValidType(type)) {
-            throw new Error("incompatible type");
+            throw new Error("[position " + node.children[0].position + ": incompatible type] " + identifier + " type " + symbol.type);
         }
 
         if (symbol) {
@@ -149,14 +149,14 @@ class Analyser {
                 return symbol.isArray() ? symbol.getValue() : symbol.value;
             }
         } else {
-            throw new Error("identifier not declared");
+            throw new Error("[position " + node.children[0].position + ": identifier not declared] " + identifier);
         }
     }
 
     subscript(node, identifier, isArray) {
         const rangeop = node.children.length == 5;
         if (rangeop^isArray) {
-            throw new Error("subscript type 160");
+            throw new Error("[position " + node.children[0].position + ": incompatible subscript operation] " + identifier);
         }
 
         const symbol = this.symbolTable[identifier];
@@ -193,7 +193,7 @@ class Analyser {
         }
 
         if (type != null && type != literal.tokenType) {
-            throw new Errow("wrong type");
+            throw new Error("[position " + literal.position + ": invalid literal type] " + literal.lexeme);
         }
 
         return value;
